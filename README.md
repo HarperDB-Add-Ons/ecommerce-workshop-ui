@@ -26,6 +26,8 @@ By default, this static react app requires that the application is "built" and s
 
 Each time the user updates the UI, they will need to hit `https://my-instance-url:9926/Build/` to ensure their changes show up when they refresh the page.
 
+Once built, the UI will be available at `https://my-instance-url:9926` (assuming http securePort is set to 9926)
+
 ### Example Data
 
 This Repository also contains two example `.csv` docs filled with price and inventory data for each of the items in the legacy product database. Once the application starts up, they should insert this data via the Studio's browse tab.
