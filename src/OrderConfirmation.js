@@ -9,10 +9,9 @@ const OrderConfirmation
   return (
     <div>
       <AppNavbar/>
-      <div class="mb-5">&nbsp;</div>
-      <Container fluid>
+      <Container fluid className="pt-4">
         <h3>Thank you for your order!</h3>
-        <Button color="primary" tag={Link} to="/products">Home</Button>
+        <Button color="primary" tag={Link} to="/">Home</Button>
       </Container>
     </div>
   );
