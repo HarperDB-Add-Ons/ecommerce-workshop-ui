@@ -1,3 +1,0 @@
-type api @table(expiration: 3600) @export {
-	id: ID @primaryKey
-}

@@ -3,16 +3,14 @@ import { Button, Container, Table } from 'reactstrap';
 import { Link } from 'react-router-dom';
 
 import AppNavbar from './AppNavbar.js';
-import config from './_VARS.js';
 
 const ProductList = () => {
   const [products, setProducts] = useState(false);
 
   useEffect(() => {
     async function fetchProducts() {
-      const response = await fetch(`${config.PRODUCT_API}`);
+      const response = await fetch('https://ecommerce.edgecloud9.com/api/products');
       const data = await response.json();
-      console.log(data);
       setProducts(data);
     }
     fetchProducts();
@@ -39,12 +37,7 @@ const ProductList = () => {
               <td style={{whiteSpace: 'nowrap'}}>{product.name}</td>
               <td>{product.description}</td>
               <td>
-                {product.variations.reduce((acc, obj) => acc + obj.onHandCount, 0) > 0 ? (
-                  <Button style={{ width: '102px' }} size="sm" color="primary" tag={Link} to={"/products/" + product.id}>View</Button>
-                ) : (
-                  <Button style={{ width: '102px' }} size="sm" color="primary" className="text-nowrap" disabled>Out Of Stock</Button>
-                )
-                }
+                <Button style={{ width: '102px' }} size="sm" color="primary" tag={Link} to={"/products/" + product.id}>View</Button>
               </td>
             </tr>))}
           </tbody>
