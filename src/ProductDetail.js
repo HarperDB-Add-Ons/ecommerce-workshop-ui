@@ -1,141 +1,90 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Button, Container, Form, FormGroup, Input, Label } from 'reactstrap';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Button, Container } from 'reactstrap';
+
 import AppNavbar from './AppNavbar.js';
 
-const ProductDetail
-= () => {
-
-  const initialProduct = {
-    variations: []
-  };
-
-  const initialOrder = {
-      status: "NEW",
-      taxAmount: 0.0,
-      totalAmount: 0.0,
-      grandTotalAmount: 0.0,
-      lineItems: []
-  };
-
-  const [product, setProduct] = useState(initialProduct);
-  const [order, setOrder] = useState(initialOrder);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+const ProductDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const [product, setProduct] = useState(null);
+  const [priceandqty, setPriceandqty] = useState(null);
 
-  let USDollar = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-  });
+  const purchaseItem = async ({ variationId }) => {
+    const productVariation = priceandqty.find((v) => v.id === variationId);
+    const totalAmount = productVariation.price;
+    const taxAmount = totalAmount * 0.07;
+    const grandTotalAmount = totalAmount + taxAmount;
+    const body = { status: 'NEW', totalAmount, taxAmount, grandTotalAmount, lineItems: [{ productVariation, price: totalAmount, quantity: 1 }]};
+    await fetch(`https://ecommerce.edgecloud9.com/api/orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)});
+    alert('Thank you for your purchase');
+    navigate('/');
+  }
 
   useEffect(() => {
-    fetch(`https://ecommerce.edgecloud9.com/api/products/${id}`)
-    .then(response => response.json())
-    .then(data => {
-       setProduct(data);
-       let lineItems = [];
-       data.variations.map(productVariation => {
-         const lineItem = {
-            productVariation: productVariation,
-            price: productVariation.price,
-            quantity: 0
-         }
-         lineItems.push(lineItem);
-       });
-       setOrder({ ...order, lineItems: lineItems });
-    });
-    setLoading(false);
-  }, []);
+    const fetchProductInfo = async() => {
+      const response = await fetch(`https://ecommerce.edgecloud9.com/api/products/${id}`);
+      const data = await response.json();
+      setPriceandqty(data.variations);
+      delete data.variations;
+      setProduct(data);
+    }
+    fetchProductInfo();
+  }, [id, setProduct]);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target
-    const index = order.lineItems.findIndex(x => x.productVariation.id === parseInt(name));
-    order.lineItems[index].quantity = parseInt(value);
+  /*
+  useEffect(() => {
+    let eventSource;
+    const subscribeProductInfo = async() => {
+      eventSource = new EventSource(`https://localhost:9926/api/products/${id}`, { withCredentials: true });
+      eventSource.addEventListener('message', (event) => {
+        const data = JSON.parse(event.data).value;
+        setPriceandqty(data.priceandqty);
+      });
+    }
+    subscribeProductInfo();
+    return () => eventSource?.close();
+  }, [id, setProduct]);
+  */
 
-    let subTotal = 0.0;
-    order.lineItems.map(lineItem => {
-        const lineItemTotal = lineItem.quantity * lineItem.price;
-        subTotal += lineItemTotal;
-    });
-
-    order.totalAmount = subTotal;
-    order.taxAmount = subTotal * 0.07;
-    order.grandTotalAmount = order.totalAmount + order.taxAmount;
-    setOrder({ ...order });
-  }
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    await fetch('https://ecommerce.edgecloud9.com/api/orders', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(order)
-    });
-    setProduct(initialOrder);
-    navigate('/order-confirmation');
-  }
-
-  if (loading) {
-    return <p>Loading...</p>;
-  }
-
-  const productVariationList = product.variations.map(productVariation => {
-      return <tr key={productVariation.id}>
-        <td style={{whiteSpace: 'nowrap'}}>{productVariation.name}</td>
-        <td>{productVariation.description}</td>
-        <td>${productVariation.price}</td>
-        <td>
-            {
-              productVariation.onHandCount > 0 &&
-                <Input type="text"
-                name={productVariation.id}
-                id={productVariation.id}
-                value={order.lineItems.find(x => x.productVariation.id === productVariation.id).quantity || '0'}
-                onChange={handleChange} />
-            }
-            {
-                productVariation.onHandCount <= 0 &&
-                <span>Out of stock</span>
-            }
-        </td>
-      </tr>
-    });
-
-  return (<div>
+  return (
+    <div>
       <AppNavbar/>
-      <div class="mb-5">&nbsp;</div>
-      <Container>
-        <Form onSubmit={handleSubmit}>
-          <div className="row">
-            <div className="col text-center">
-                <img src={"https://ecommerce.edgecloud9.com/api/images/" + product.name + "/image.png"} />
-                <h2>{product.name}</h2>
-            </div>
-            <div className="col">
-                <h4>{product.description}</h4>
-                <table>
-                    {productVariationList}
-                    <tr>
-                        <td colSpan={4}>
-                            <hr/>
-                            <FormGroup>
-                                <h5>Sub total: {USDollar.format(order.totalAmount)}</h5>
-                                <h5>Tax: {USDollar.format(order.taxAmount)}</h5>
-                                <h5>Grand total: {USDollar.format(order.grandTotalAmount)}</h5>
-                                <Button color="primary" type="submit">Buy</Button>{' '}
-                                <Button color="secondary" tag={Link} to="/products">Cancel</Button>
-                            </FormGroup>
-                        </td>
-                    </tr>
-                </table>
-            </div>
+      <Container className="pt-4">
+      { !product ? (
+        <div className="text-center">loading...</div>
+      ) : (
+        <div className="row">
+          <div className="col col-5">
+            <img alt="" width="100%" src={"https://ecommerce.edgecloud9.com/api/images/" + product?.name + "/image.png"} />
           </div>
-        </Form>
+          <div className="col col-7">
+            <h4>{product?.description}</h4>
+            <hr />
+            <div className="row">
+              <div className="col col-3">Size</div>
+              <div className="col col-3">Price</div>
+              <div className="col col-3 text-center">On Hand</div>
+              <div className="col col-3"></div>
+            </div>
+            <hr />
+            {priceandqty && priceandqty.map((v) => (
+              <div className="row" key={v.id}>
+                <div className="col col-3">{v?.name}</div>
+                <div className="col col-3">${v?.price}</div>
+                <div className="col col-3 text-center">{v?.onHandCount}</div>
+                <div className="col col-3">
+                  <Button color="primary" disabled={v?.onHandCount < 1} block onClick={() => purchaseItem({ variationId: v.id })}>
+                    {v?.onHandCount < 1 ? 'Sold Out' : 'Buy 1'}
+                  </Button>
+                </div>
+                <div className="col col-12"><hr/></div>
+              </div>
+            ))}
+            <Button color="secondary" block tag={Link} to="/">Return To Product List</Button>
+          </div>
+        </div>
+      )}
       </Container>
     </div>
   )
