@@ -7,10 +7,11 @@ import AppNavbar from './AppNavbar.js';
 
 const purchaseItem = async ({ product, variationId, navigate }) => {
   const productVariation = product.variations.find((v) => v.id === variationId);
+  productVariation.quantity = 1;
   const totalAmount = productVariation.price;
   const taxAmount = totalAmount * 0.07;
   const grandTotalAmount = totalAmount + taxAmount;
-  const body = { totalAmount, taxAmount, grandTotalAmount, lineItems: { productVariation, price: totalAmount, quantity: 1 }};
+  const body = { status: 'NEW', totalAmount, taxAmount, grandTotalAmount, lineItems: [{ productVariation, price: totalAmount, quantity: 1 }]};
 
   console.log(body);
 
